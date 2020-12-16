@@ -4,6 +4,10 @@
 #include <assert.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define QSON_ASSERT(x) assert(x)
 #define QSON_ALWAYS_INLINE static inline
 
@@ -44,16 +48,6 @@ QSON_ALWAYS_INLINE qson_type_t qson_get_type(const qson_value_t *v)
     return v->type;
 }
 
-QSON_ALWAYS_INLINE qson_ret_t qson_parse(qson_value_t *v, const char *json)
-{
-    QSON_ASSERT(v != NULL);
-    v->type = QSON_TYPE_NULL;
-    qson_context_t ctx;
-    ctx.json = json;
-    qson_parse_whitespace(&ctx);
-    return qson_parse_value(&ctx);
-}
-
 // Eat whitespace chars like ' '/'\t'/'\n'/'\r'
 // \t@param ctx
 QSON_ALWAYS_INLINE void qson_parse_whitespace(qson_context_t *ctx)
@@ -64,11 +58,6 @@ QSON_ALWAYS_INLINE void qson_parse_whitespace(qson_context_t *ctx)
         p++;
     }
     ctx->json = p;
-}
-
-QSON_ALWAYS_INLINE qson_ret_t qson_parse_value(qson_context_t *ctx)
-{
-    return QSON_PARSE_OK;
 }
 
 QSON_ALWAYS_INLINE qson_ret_t qson_parse_null(qson_context_t *ctx, qson_value_t *v)
@@ -107,6 +96,33 @@ QSON_ALWAYS_INLINE qson_ret_t qson_parse_true(qson_context_t *ctx, qson_value_t 
     return QSON_PARSE_OK;
 }
 
+QSON_ALWAYS_INLINE qson_ret_t qson_parse_value(qson_context_t *ctx, qson_value_t *v)
+{
+    switch (*ctx->json)
+    {
+        case 'n':  return qson_parse_null(ctx, v); break;
+        case 't':  return qson_parse_true(ctx, v); break;
+        case 'f':  return qson_parse_false(ctx, v); break;
+        case '\0': return QSON_PARSE_EXPECT_VALUE; break;
+        default:   return QSON_PARSE_INVALID_VALUE; break;
+    }
+}
 
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+QSON_ALWAYS_INLINE qson_ret_t qson_parse(qson_value_t *v, const char *json)
+{
+    QSON_ASSERT(v != NULL);
+    v->type = QSON_TYPE_NULL;
+    qson_context_t ctx;
+    ctx.json = json;
+    qson_parse_whitespace(&ctx);
+    return qson_parse_value(&ctx, v);
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
