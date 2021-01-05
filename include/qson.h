@@ -3,8 +3,8 @@
 
 #include <assert.h>
 #include <string.h>
-#include <stdlib.h> // for strtok(2)
-#include "math.h"
+#include <stdlib.h>
+#include <math.h>
 #include <errno.h>  
 
 #ifdef __cplusplus
@@ -29,8 +29,11 @@ typedef enum {
 } qson_type_t;
 
 typedef struct qson_value_s {
+	union {
+		struct {char *str; size_t len;} ;
+		double n;
+	};
     qson_type_t type;
-    double n;
 } qson_value_t;
 
 enum {
@@ -50,6 +53,16 @@ typedef struct qson_context_s {
     QSON_ASSERT(*(ctx->json) == (ch));      \
     ctx->json++;                            \
 } while(0)
+
+void qson_free(qson_value_t *v)
+{
+	QSON_ASSERT(v!=NULL);
+	if(v->type == QSON_TYPE_STRING)
+	{
+		free(v->str); // c11 required.
+	}
+	v->type = QSON_TYPE_NULL;
+}
 
 // Eat whitespace chars like ' '/'\t'/'\n'/'\r'
 // \t@param ctx
@@ -105,13 +118,11 @@ QSON_ALWAYS_INLINE qson_ret_t qson_parse_true(qson_context_t *ctx, qson_value_t 
 // exp = ("e" / "E") ["-" / "+"] 1*digit
 QSON_ALWAYS_INLINE qson_ret_t qson_parse_number(qson_context_t *ctx, qson_value_t *v)
 {
-    bool isNegative = false;
     const char* p = ctx->json;
 
     if(*p == '-') 
     {
         p++;
-        isNegative = true;
     }
 
     if(*p == '0')
@@ -166,7 +177,7 @@ QSON_ALWAYS_INLINE qson_ret_t qson_parse_number(qson_context_t *ctx, qson_value_
 QSON_ALWAYS_INLINE qson_ret_t qson_parse_string(qson_context_t *ctx, qson_value_t *v)
 {
     EXPECT_CHAR(ctx, '\"');
-
+	
     return QSON_PARSE_OK;
 }
 

@@ -112,9 +112,16 @@ static void test_parse()
     test_parse_number_invalid();
 }
 
+static void test_0123()
+{
+	qson_value_t v;
+	qson_parse(&v, "0123");
+}
+
 int main(int argc, char **argv)
 {
-    test_parse();
+	test_0123();
+//    test_parse();
     printf("%d/%d (%3.2f%%) passed\n", test_pass, test_count, test_pass * 100.0 / test_count);
     return main_ret;
 }
